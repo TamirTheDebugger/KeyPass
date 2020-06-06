@@ -15,28 +15,31 @@ def user_login():
     if(not user_database.user_in_DB(username_input)):
         user_database.register_user(username_input, password_input)
     curr_user = User(username_input, password_input, user_database.getID(username_input))
-    print(curr_user.getID())
     return user_database.confirm_User(username_input, password_input)
 
 def accountDB_menu():
     global curr_user, user_database
     print("hello " + curr_user.getUsername() + " please choose an action to perform:")
-    print("""
+    welcome = """
              1: Enter a new Account to the database
              2: Remove an Account from the database
              3: Get an Account url, username and password
-             4: exit the program""")
+             4: exit the program"""
+    print(welcome)
+    # IDEA: adding a log out function
     action = input("what would you like to do? enter the corresponding number: ")
     while action != "4":
         if action == "1":
             user_database.inset_account(curr_user)
         elif action == "2":
-            pass
+            user_database.remove_account(curr_user)
         elif action == "3":
             pass
         else:
             print("invalid input, please try again")
+        print(welcome)
         action = input("what else would you like to do? enter the corresponding number: ")
+    print("\n thank you and goodbye :)")
 
 def main():
     if(user_login()):
