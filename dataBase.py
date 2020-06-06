@@ -5,6 +5,22 @@ import sqlite3
 from UserClass import User
 from Crypto.Cipher import  AES
 
+def cipher_str(user, str):
+    """
+    encrypts a string using AES.
+    :param user: the user's credentials
+    :param str: the string to encrypt
+    :type user: User
+    :type str: String
+    :return: the encrypted string
+    :rtype: binary
+    """
+    key = hashlib.sha256(user.getPassword().encode()).digest()
+    vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
+    pad = lambda s: s + (16 - len(s) % 16) * chr(16 - len(s) % 16) # unpad = lambda s : s[:-ord(s[len(s)-1:])] - unpadding command for later
+    enc = AES.new(key, AES.MODE_CBC, vector)
+    return enc.encrypt(pad(str).encode())
+
 class userDB():
     def __init__ (self, database_file_name):
         # constructor
@@ -12,7 +28,7 @@ class userDB():
         self.__pos = self.__conn.cursor()
         try:
             self.__pos.execute("""CREATE TABLE users (userID INTEGER PRIMARY KEY AUTOINCREMENT, username UNIQUE, password NOT NULL, salt NOT NULL) """)
-            self.__pos.execute("""CREATE TABLE accounts (accID INTEGER PRIMARY KEY AUTOINCREMENT,userID NOT NULL, url NOT NULL, acc_username NOT NULL, acc_password NOT NULL,  FOREIGN KEY (userID) REFERENCES users(userID)) """)
+            self.__pos.execute("""CREATE TABLE accounts (accID INTEGER PRIMARY KEY AUTOINCREMENT,userID NOT NULL,acc_name NOT NULL, url NOT NULL, acc_username NOT NULL, acc_password NOT NULL,  FOREIGN KEY (userID) REFERENCES users(userID)) """)
         except:
             pass
 
@@ -75,18 +91,39 @@ class userDB():
 
 
     def inset_account(self, user):
+        """
+        insets a user's account to the accounts database
+        :param user: the user's credentials
+        :type username: User
+        :return: NONE
+        """
+        acc_url = input("enter the account's url: ")
         acc_name = input("enter the account's name: ")
         acc_username = input("enter the account's username: ")
         acc_password = input("enter the account's password: ")
-        key = hashlib.sha256(user.getPassword().encode()).digest()
-        vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
-        pad = lambda s: s + (16 - len(s) % 16) * chr(16 - len(s) % 16)
-        enc = AES.new(key, AES.MODE_CBC, vector)
-        acc_username = enc.encrypt(pad(acc_username).encode())
-        acc_password = enc.encrypt(pad(acc_password).encode())
-        """try:"""
-        self.__pos.execute("INSERT INTO accounts (userID, url, acc_username, acc_password) VALUES(?,?,?,?)", (user.getID(), acc_name, acc_username, acc_password))
+        acc_username = cipher_str(user, acc_username)
+        acc_password = cipher_str(user, acc_password)
+        try:
+            self.__pos.execute("INSERT INTO accounts (userID, acc_name, url, acc_username, acc_password) VALUES(?,?,?,?,?)", (user.getID(), acc_name, acc_url, acc_username, acc_password))
+            self.__conn.commit()
+            print("Account saved successfully")
+        except :
+            print("an error occurred, please try again")
+
+    def remove_account(self, user):
+        """
+        removes a user's account to the accounts database
+        :param user: the user's credendtials
+        :param acc_name: the name of the account
+        :type username: User
+        :return: NONE
+        """
+        acc_name = input("enter the account's name you desire to delete: ")
+        acc_username = input("enter the account's username you desire to delete: ")
+        acc_username = cipher_str(user, acc_username)
+        self.__pos.execute('DELETE FROM accounts WHERE userID LIKE ? AND acc_name LIKE ? AND acc_username LIKE ?', (user.getID(), acc_name, acc_username))
+        if self.__pos.execute(' SELECT changes()').fetchone()[0] > 0:
+            print("account removed successfully!")
+        else:
+            print("account removal failed, please try entering an existing account")
         self.__conn.commit()
-        print("Account saved successfully")
-        """except Exception as e:
-             print("an error occured, please try again: "  e)"""
