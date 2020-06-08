@@ -90,36 +90,41 @@ class userDB():
         return self.__pos.execute('SELECT userID FROM users WHERE username LIKE ?', (username,)).fetchone()[0]
 
 
-    def inset_account(self, user):
+    def inset_account(self, user, acc_url, acc_name, acc_username, acc_password):
         """
         insets a user's account to the accounts database
         :param user: the user's credentials
-        :type username: User
+        :param acc_url: the url of the account
+        :param acc_name: the name of the account
+        :param acc_username: the username of the account
+        :param acc_password: the password of the account
+        :type user: User
+        :type acc_url: String
+        :type acc_name: String
+        :type acc_username: String
+        :type acc_password: String
         :return: NONE
         """
-        acc_url = input("enter the account's url: ")
-        acc_name = input("enter the account's name: ")
-        acc_username = input("enter the account's username: ")
-        acc_password = input("enter the account's password: ")
         acc_username = cipher_str(user, acc_username)
         acc_password = cipher_str(user, acc_password)
         try:
             self.__pos.execute("INSERT INTO accounts (userID, acc_name, url, acc_username, acc_password) VALUES(?,?,?,?,?)", (user.getID(), acc_name, acc_url, acc_username, acc_password))
-            self.__conn.commit()
+            self.__conn.commit() # saving the account to the database
             print("Account saved successfully")
         except :
             print("an error occurred, please try again")
 
-    def remove_account(self, user):
+    def remove_account(self, user, acc_name, acc_username):
         """
         removes a user's account to the accounts database
         :param user: the user's credendtials
         :param acc_name: the name of the account
-        :type username: User
+        :param acc_username: the username of the account
+        :type user: User
+        :type acc_name: String
+        :type acc_username: String
         :return: NONE
         """
-        acc_name = input("enter the account's name you desire to delete: ")
-        acc_username = input("enter the account's username you desire to delete: ")
         acc_username = cipher_str(user, acc_username)
         self.__pos.execute('DELETE FROM accounts WHERE userID LIKE ? AND acc_name LIKE ? AND acc_username LIKE ?', (user.getID(), acc_name, acc_username))
         if self.__pos.execute(' SELECT changes()').fetchone()[0] > 0:
@@ -128,12 +133,13 @@ class userDB():
             print("account removal failed, please try entering an existing account")
         self.__conn.commit()
 
-    def get_account (self, user):
+    def get_account (self, user, acc_name):
         """
         retrives a user's account to the accounts database
         :param user: the user's credendtials
         :param acc_name: the name of the account
         :type username: User
+        :type acc_name: String
         :return: the account's information
         :rtype: Strings
         """
@@ -141,13 +147,13 @@ class userDB():
         key = hashlib.sha256(user.getPassword().encode()).digest()
         vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
         unpad = lambda s : s[:-ord(s[len(s)-1:])]
-        dec = AES.new(key, AES.MODE_CBC, vector)
-        acc_name = input("enter the account's name: ")
-        acc_list = self.__pos.execute('SELECT url, acc_username, acc_password FROM accounts WHERE acc_name LIKE ?', (acc_name,)).fetchmany()
+        acc_list = self.__pos.execute('SELECT url, acc_username, acc_password FROM accounts WHERE userID LIKE ? AND acc_name LIKE ?', (user.getID(), acc_name)).fetchall()
         if len(acc_list) == 0:
             print("invalid account name, please enter an existing account")
         for cred in acc_list:
+            dec_username = AES.new(key, AES.MODE_CBC, vector) #username decryption module
+            dec_password = AES.new(key, AES.MODE_CBC, vector)#password decryption module
             acc_url = cred[0]
-            acc_password = unpad(dec.decrypt(cred[2])).decode()
-            acc_username = unpad(dec.decrypt(cred[1])).decode()
-            print("account url: %s \naccount username: %s \naccount password: %s " % (acc_url, acc_username, acc_password))
+            acc_username = unpad(dec_username.decrypt(cred[1])).decode()
+            acc_password = unpad(dec_password.decrypt(cred[2])).decode()
+            print("account url: %s \naccount your username: %s \nyour account password: %s \n" % (acc_url, acc_username, acc_password))
