@@ -140,7 +140,7 @@ class userDB():
         acc_list = []
         key = hashlib.sha256(user.getPassword().encode()).digest()
         vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
-        pad = lambda s: s + (16 - len(s) % 16) * chr(16 - len(s) % 16) # unpad = lambda s : s[:-ord(s[len(s)-1:])] - unpadding command for later
+        unpad = lambda s : s[:-ord(s[len(s)-1:])]
         dec = AES.new(key, AES.MODE_CBC, vector)
         acc_name = input("enter the account's name: ")
         acc_list = self.__pos.execute('SELECT url, acc_username, acc_password FROM accounts WHERE acc_name LIKE ?', (acc_name,)).fetchmany()
@@ -148,6 +148,6 @@ class userDB():
             print("invalid account name, please enter an existing account")
         for cred in acc_list:
             acc_url = cred[0]
-            acc_username = dec.decrypt(cred[1])
-            acc_password = dec.decrypt(cred[2])
+            acc_password = unpad(dec.decrypt(cred[2])).decode()
+            acc_username = unpad(dec.decrypt(cred[1])).decode()
             print("account url: %s \naccount username: %s \naccount password: %s " % (acc_url, acc_username, acc_password))
