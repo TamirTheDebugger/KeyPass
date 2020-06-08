@@ -34,7 +34,7 @@ def accountDB_menu():
         elif action == "2":
             user_database.remove_account(curr_user)
         elif action == "3":
-            pass
+            user_database.get_account(curr_user)
         else:
             print("invalid input, please try again")
         print(welcome)

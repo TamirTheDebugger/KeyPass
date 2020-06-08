@@ -28,7 +28,7 @@ class userDB():
         self.__pos = self.__conn.cursor()
         try:
             self.__pos.execute("""CREATE TABLE users (userID INTEGER PRIMARY KEY AUTOINCREMENT, username UNIQUE, password NOT NULL, salt NOT NULL) """)
-            self.__pos.execute("""CREATE TABLE accounts (accID INTEGER PRIMARY KEY AUTOINCREMENT,userID NOT NULL,acc_name NOT NULL, url NOT NULL, acc_username NOT NULL, acc_password NOT NULL,  FOREIGN KEY (userID) REFERENCES users(userID)) """)
+            self.__pos.execute("""CREATE TABLE accounts (accID INTEGER PRIMARY KEY AUTOINCREMENT,userID NOT NULL, acc_name NOT NULL, url NOT NULL, acc_username NOT NULL, acc_password NOT NULL,  FOREIGN KEY (userID) REFERENCES users(userID)) """)
         except:
             pass
 
@@ -127,3 +127,27 @@ class userDB():
         else:
             print("account removal failed, please try entering an existing account")
         self.__conn.commit()
+
+    def get_account (self, user):
+        """
+        retrives a user's account to the accounts database
+        :param user: the user's credendtials
+        :param acc_name: the name of the account
+        :type username: User
+        :return: the account's information
+        :rtype: Strings
+        """
+        acc_list = []
+        key = hashlib.sha256(user.getPassword().encode()).digest()
+        vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
+        pad = lambda s: s + (16 - len(s) % 16) * chr(16 - len(s) % 16) # unpad = lambda s : s[:-ord(s[len(s)-1:])] - unpadding command for later
+        dec = AES.new(key, AES.MODE_CBC, vector)
+        acc_name = input("enter the account's name: ")
+        acc_list = self.__pos.execute('SELECT url, acc_username, acc_password FROM accounts WHERE acc_name LIKE ?', (acc_name,)).fetchmany()
+        if len(acc_list) == 0:
+            print("invalid account name, please enter an existing account")
+        for cred in acc_list:
+            acc_url = cred[0]
+            acc_username = dec.decrypt(cred[1])
+            acc_password = dec.decrypt(cred[2])
+            print("account url: %s \naccount username: %s \naccount password: %s " % (acc_url, acc_username, acc_password))
