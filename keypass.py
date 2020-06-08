@@ -30,11 +30,18 @@ def accountDB_menu():
     action = input("what would you like to do? enter the corresponding number: ")
     while action != "4":
         if action == "1":
-            user_database.inset_account(curr_user)
+            acc_url = input("enter the account's url: ")
+            acc_name = input("enter the account's name: ")
+            acc_username = input("enter the account's username: ")
+            acc_password = input("enter the account's password: ")
+            user_database.inset_account(curr_user, acc_url, acc_name, acc_username, acc_password)
         elif action == "2":
-            user_database.remove_account(curr_user)
+            acc_name = input("enter the account's name you desire to delete: ")
+            acc_username = input("enter the account's username you desire to delete: ")
+            user_database.remove_account(curr_user, acc_name, acc_username)
         elif action == "3":
-            pass
+            acc_name = input("enter the account's name: ")
+            user_database.get_account(curr_user, acc_name)
         else:
             print("invalid input, please try again")
         print(welcome)
