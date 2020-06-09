@@ -21,12 +21,28 @@ def cipher_str(user, str):
     enc = AES.new(key, AES.MODE_CBC, vector)
     return enc.encrypt(pad(str).encode())
 
+def decipher_str(user, str):
+    """
+    decrypts a string using AES.
+    :param user: the user's credentials
+    :param str: the string to decrypt
+    :type user: User
+    :type str: String
+    :return: the decrypted string
+    :rtype: String
+    """
+    key = hashlib.sha256(user.getPassword().encode()).digest()
+    vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
+    unpad = lambda s : s[:-ord(s[len(s)-1:])]
+    dec = AES.new(key, AES.MODE_CBC, vector)
+    return unpad(dec.decrypt(str)).decode()
+
 class userDB():
     def __init__ (self, database_file_name):
         # constructor
         self.__conn = sqlite3.connect(database_file_name)
         self.__pos = self.__conn.cursor()
-        try:
+        try: # creating the database tables
             self.__pos.execute("""CREATE TABLE users (userID INTEGER PRIMARY KEY AUTOINCREMENT, username UNIQUE, password NOT NULL, salt NOT NULL) """)
             self.__pos.execute("""CREATE TABLE accounts (accID INTEGER PRIMARY KEY AUTOINCREMENT,userID NOT NULL, acc_name NOT NULL, url NOT NULL, acc_username NOT NULL, acc_password NOT NULL,  FOREIGN KEY (userID) REFERENCES users(userID)) """)
         except:
@@ -41,10 +57,10 @@ class userDB():
         :type new_password: String
         :return: NONE
         """
-        salt = urandom(64)
+        salt = urandom(64) # generating salt
         new_password = password.encode() + salt
         salt = b64encode(salt).decode()
-        hash_password = b64encode(hashlib.sha512(new_password).digest()).decode()
+        hash_password = b64encode(hashlib.sha512(new_password).digest()).decode() # encrypting the password with the salt using sha512
         self.__pos.execute("INSERT INTO users (username, password, salt) VALUES(?,?,?)", (username, hash_password, salt))
         self.__conn.commit()
         print("Hello new user!")
@@ -59,10 +75,10 @@ class userDB():
         :return: if the password is verified or not
         :rtype: boolean
         """
-        salt = b64decode(self.__pos.execute('SELECT salt FROM users WHERE username = ?', (username,)).fetchone()[0].encode())
+        salt = b64decode(self.__pos.execute('SELECT salt FROM users WHERE username = ?', (username,)).fetchone()[0].encode())  # retrieving salt from the database
         password = password.encode() + salt
         hash_password =  b64encode(hashlib.sha512(password).digest()).decode()
-        cond = self.__pos.execute('SELECT password FROM users WHERE username = ?', (username,)).fetchone()[0] == hash_password
+        cond = self.__pos.execute('SELECT password FROM users WHERE username = ?', (username,)).fetchone()[0] == hash_password # checking whether the passwords match
         if cond:
              return True
         return False
@@ -107,9 +123,9 @@ class userDB():
         """
         acc_username = cipher_str(user, acc_username)
         acc_password = cipher_str(user, acc_password)
-        try:
+        try: # inserting the account to the database
             self.__pos.execute("INSERT INTO accounts (userID, acc_name, url, acc_username, acc_password) VALUES(?,?,?,?,?)", (user.getID(), acc_name, acc_url, acc_username, acc_password))
-            self.__conn.commit() # saving the account to the database
+            self.__conn.commit()
             print("Account saved successfully")
         except :
             print("an error occurred, please try again")
@@ -126,8 +142,8 @@ class userDB():
         :return: NONE
         """
         acc_username = cipher_str(user, acc_username)
-        self.__pos.execute('DELETE FROM accounts WHERE userID LIKE ? AND acc_name LIKE ? AND acc_username LIKE ?', (user.getID(), acc_name, acc_username))
-        if self.__pos.execute(' SELECT changes()').fetchone()[0] > 0:
+        self.__pos.execute('DELETE FROM accounts WHERE userID LIKE ? AND acc_name LIKE ? AND acc_username LIKE ?', (user.getID(), acc_name, acc_username)) # deleting the desired account
+        if self.__pos.execute(' SELECT changes()').fetchone()[0] > 0: # checking if the account was deleted
             print("account removed successfully!")
         else:
             print("account removal failed, please try entering an existing account")
@@ -143,17 +159,12 @@ class userDB():
         :return: the account's information
         :rtype: Strings
         """
-        acc_list = []
-        key = hashlib.sha256(user.getPassword().encode()).digest()
-        vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
-        unpad = lambda s : s[:-ord(s[len(s)-1:])]
+        acc_list = [] # a list of all the accounts with the given name in the user's database
         acc_list = self.__pos.execute('SELECT url, acc_username, acc_password FROM accounts WHERE userID LIKE ? AND acc_name LIKE ?', (user.getID(), acc_name)).fetchall()
         if len(acc_list) == 0:
             print("invalid account name, please enter an existing account")
         for cred in acc_list:
-            dec_username = AES.new(key, AES.MODE_CBC, vector) #username decryption module
-            dec_password = AES.new(key, AES.MODE_CBC, vector)#password decryption module
             acc_url = cred[0]
-            acc_username = unpad(dec_username.decrypt(cred[1])).decode()
-            acc_password = unpad(dec_password.decrypt(cred[2])).decode()
-            print("account url: %s \naccount your username: %s \nyour account password: %s \n" % (acc_url, acc_username, acc_password))
+            acc_username = decipher_str(cred[1]) # decrypting the account's username
+            acc_password = decipher_str(cred[2]) # decrypting the account's password
+            print("account url: %s \naccount your username: %s \nyour account password: %s \n" % (acc_url, acc_username, acc_password)) # printing the user's account information

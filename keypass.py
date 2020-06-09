@@ -12,9 +12,9 @@ def user_login():
     global curr_user, user_database
     username_input = input("enter your username: ")
     password_input = input("enter your password: ")
-    if(not user_database.user_in_DB(username_input)):
+    if(not user_database.user_in_DB(username_input)): # checking if the user in the databse
         user_database.register_user(username_input, password_input)
-    curr_user = User(username_input, password_input, user_database.getID(username_input))
+    curr_user = User(username_input, password_input, user_database.getID(username_input)) # creating a User object with its credentials
     return user_database.confirm_User(username_input, password_input)
 
 def accountDB_menu():
@@ -29,17 +29,17 @@ def accountDB_menu():
     # IDEA: adding a log out function
     action = input("what would you like to do? enter the corresponding number: ")
     while action != "4":
-        if action == "1":
+        if action == "1": # inserting an account to the databse
             acc_url = input("enter the account's url: ")
             acc_name = input("enter the account's name: ")
             acc_username = input("enter the account's username: ")
             acc_password = input("enter the account's password: ")
             user_database.inset_account(curr_user, acc_url, acc_name, acc_username, acc_password)
-        elif action == "2":
+        elif action == "2": # removing an account to the databse
             acc_name = input("enter the account's name you desire to delete: ")
             acc_username = input("enter the account's username you desire to delete: ")
             user_database.remove_account(curr_user, acc_name, acc_username)
-        elif action == "3":
+        elif action == "3": # retrieving an account from the database
             acc_name = input("enter the account's name: ")
             user_database.get_account(curr_user, acc_name)
         else:
