@@ -1,5 +1,8 @@
 from dataBase import userDB
 from UserClass import User
+import pyperclip
+from ctypes import windll
+import time
 
 curr_user = "placeholder"
 user_database = userDB("test_DB")
@@ -17,7 +20,57 @@ def user_login():
     curr_user = User(username_input, password_input, user_database.getID(username_input)) # creating a User object with its credentials
     return user_database.confirm_User(username_input, password_input)
 
+def copy_creds(str):
+    """
+    copies data to the clipboard and deletes it after 30s
+    :param str: information to copy
+    :type str: String
+    :return: None
+    """
+    pyperclip.copy(str)
+    time.sleep(15) # waiting 15 seceonds
+    if windll.user32.OpenClipboard(None): # clearing the clipboard
+        windll.user32.EmptyClipboard()
+        windll.user32.CloseClipboard()
+
+def copy_menu(cred_list):
+    """
+    the menu to copy the account credentials
+    :param cred_list: a list of all accounts retrieved with their information in tuples
+    :type cred_list: list
+    :return: None
+    """
+    print("here are the accounts we found:")
+    if len(cred_list) == 0: # checking if any accounts were found
+        print("no accounts were found\n")
+        return None
+    for i in range(len(cred_list)):
+        acc = cred_list[i]
+        print("\t" + str(i) + ". url: " + acc[0] + " | username: " + acc[1] + " | password: " + acc[2]) # displaying the retrieved accounts to the user
+    chosen_account = int(input("insert the number of the account to copy: "))
+    if chosen_account > len(cred_list): # checking if the chosen account exists in the list
+        print("invalid number, please try again")
+        return None
+    print("""what would you like to copy?
+            1. the url
+            2. the username
+            3. the password
+            4. nothing""")
+    copy_info = input("enter the number of what you want to copy: ") # the user enters what information to copy
+    while copy_info != "4":
+        if copy_info == "1":
+            copy_creds(cred_list[chosen_account][0]) # copying the url and clearing the clipboard afterwards
+        elif copy_info == "2":
+            copy_creds(cred_list[chosen_account][1]) # copying the username and clearing the clipboard afterwards
+        elif copy_info == "3":
+            copy_creds(cred_list[chosen_account][2]) # copying the password and clearing the clipboard afterwards
+        copy_info = input("enter the number of what else you want to copy: ")
+
 def accountDB_menu():
+    """
+    the menu to control the database
+    :return: None
+    """
     global curr_user, user_database
     print("hello " + curr_user.getUsername() + " please choose an action to perform:")
     welcome = """
@@ -26,10 +79,9 @@ def accountDB_menu():
              3: Get an Account url, username and password
              4: exit the program"""
     print(welcome)
-    # IDEA: adding a log out function
     action = input("what would you like to do? enter the corresponding number: ")
     while action != "4":
-        if action == "1": # inserting an account to the databse
+        if action == "1": # inserting an account to the database
             acc_url = input("enter the account's url: ")
             acc_name = input("enter the account's name: ")
             acc_username = input("enter the account's username: ")
@@ -41,7 +93,7 @@ def accountDB_menu():
             user_database.remove_account(curr_user, acc_name, acc_username)
         elif action == "3": # retrieving an account from the database
             acc_name = input("enter the account's name: ")
-            user_database.get_account(curr_user, acc_name)
+            copy_menu(user_database.get_account(curr_user, acc_name))
         else:
             print("invalid input, please try again")
         print(welcome)

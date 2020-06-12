@@ -17,7 +17,7 @@ def cipher_str(user, str):
     """
     key = hashlib.sha256(user.getPassword().encode()).digest()
     vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
-    pad = lambda s: s + (16 - len(s) % 16) * chr(16 - len(s) % 16) # unpad = lambda s : s[:-ord(s[len(s)-1:])] - unpadding command for later
+    pad = lambda s: s + (16 - len(s) % 16) * chr(16 - len(s) % 16) # padding function for AES
     enc = AES.new(key, AES.MODE_CBC, vector)
     return enc.encrypt(pad(str).encode())
 
@@ -33,7 +33,7 @@ def decipher_str(user, str):
     """
     key = hashlib.sha256(user.getPassword().encode()).digest()
     vector = hashlib.md5(key).digest()  # create vector in a size of 128-bit (16-bytes) for AES encryption calculations
-    unpad = lambda s : s[:-ord(s[len(s)-1:])]
+    unpad = lambda s : s[:-ord(s[len(s)-1:])] # upadding function for AES
     dec = AES.new(key, AES.MODE_CBC, vector)
     return unpad(dec.decrypt(str)).decode()
 
@@ -60,7 +60,7 @@ class userDB():
         salt = urandom(64) # generating salt
         new_password = password.encode() + salt
         salt = b64encode(salt).decode()
-        hash_password = b64encode(hashlib.sha512(new_password).digest()).decode() # encrypting the password with the salt using sha512
+        hash_password = b64encode(hashlib.sha512(new_password).digest()).decode() # hashing the password with the salt using sha512
         self.__pos.execute("INSERT INTO users (username, password, salt) VALUES(?,?,?)", (username, hash_password, salt))
         self.__conn.commit()
         print("Hello new user!")
@@ -151,20 +151,20 @@ class userDB():
 
     def get_account (self, user, acc_name):
         """
-        retrives a user's account to the accounts database
+        retrieves a user's account to the accounts database
         :param user: the user's credendtials
         :param acc_name: the name of the account
         :type username: User
         :type acc_name: String
-        :return: the account's information
-        :rtype: Strings
+        :return: a list containing the accounts' information
+        :rtype: list
         """
         acc_list = [] # a list of all the accounts with the given name in the user's database
+        cred_list = [] # a list with the accounts' credentials ready to copy to the clipboard
         acc_list = self.__pos.execute('SELECT url, acc_username, acc_password FROM accounts WHERE userID LIKE ? AND acc_name LIKE ?', (user.getID(), acc_name)).fetchall()
-        if len(acc_list) == 0:
-            print("invalid account name, please enter an existing account")
         for cred in acc_list:
             acc_url = cred[0]
-            acc_username = decipher_str(cred[1]) # decrypting the account's username
-            acc_password = decipher_str(cred[2]) # decrypting the account's password
-            print("account url: %s \naccount your username: %s \nyour account password: %s \n" % (acc_url, acc_username, acc_password)) # printing the user's account information
+            acc_username = decipher_str(user, cred[1]) # decrypting the account's username
+            acc_password = decipher_str(user, cred[2]) # decrypting the account's password
+            cred_list.append((acc_url, acc_username, acc_password))
+        return cred_list
