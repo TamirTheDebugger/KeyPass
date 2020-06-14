@@ -46,7 +46,7 @@ def copy_menu(cred_list):
         return None
     for i in range(len(cred_list)):
         acc = cred_list[i]
-        print("\t" + str(i) + ". url: " + acc[0] + " | username: " + acc[1] + " | password: " + acc[2]) # displaying the retrieved accounts to the user
+        print("\t" + str(i) + ". url: " + acc[0]) # displaying the retrieved accounts to the user
     chosen_account = int(input("insert the number of the account to copy: "))
     if chosen_account > len(cred_list): # checking if the chosen account exists in the list
         print("invalid number, please try again")
