@@ -3,6 +3,7 @@ from UserClass import User
 import pyperclip
 from ctypes import windll
 import time
+import threading
 
 curr_user = "placeholder"
 user_database = userDB("test_DB")
@@ -46,7 +47,7 @@ def copy_menu(cred_list):
         return None
     for i in range(len(cred_list)):
         acc = cred_list[i]
-        print("\t" + str(i) + ". url: " + acc[0] + " | username: " + acc[1] + " | password: " + acc[2]) # displaying the retrieved accounts to the user
+        print("\t" + str(i) + ". url: " + acc[0]) # displaying the retrieved accounts to the user
     chosen_account = int(input("insert the number of the account to copy: "))
     if chosen_account > len(cred_list): # checking if the chosen account exists in the list
         print("invalid number, please try again")
@@ -58,12 +59,15 @@ def copy_menu(cred_list):
             4. nothing""")
     copy_info = input("enter the number of what you want to copy: ") # the user enters what information to copy
     while copy_info != "4":
+        cred_to_copy = ""
         if copy_info == "1":
-            copy_creds(cred_list[chosen_account][0]) # copying the url and clearing the clipboard afterwards
+            cred_to_copy = cred_list[chosen_account][0] # copying the url and clearing the clipboard afterwards
         elif copy_info == "2":
-            copy_creds(cred_list[chosen_account][1]) # copying the username and clearing the clipboard afterwards
+            cred_to_copy = cred_list[chosen_account][1] # copying the username and clearing the clipboard afterwards
         elif copy_info == "3":
-            copy_creds(cred_list[chosen_account][2]) # copying the password and clearing the clipboard afterwards
+            cred_to_copy = cred_list[chosen_account][2] # copying the password and clearing the clipboard afterwards
+        t = threading.Thread(target=copy_creds, args=(cred_to_copy,))
+        t.start()
         copy_info = input("enter the number of what else you want to copy: ")
 
 def accountDB_menu():
