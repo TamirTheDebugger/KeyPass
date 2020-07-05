@@ -4,6 +4,7 @@ import pyperclip
 from ctypes import windll
 import time
 import threading
+from getpass import getpass
 
 curr_user = "placeholder"
 user_database = userDB("test_DB")
@@ -15,7 +16,7 @@ def user_login():
     """
     global curr_user, user_database
     username_input = input("enter your username: ")
-    password_input = input("enter your password: ")
+    password_input = getpass(prompt="enter your password: ", stream = None)
     if(not user_database.user_in_DB(username_input)): # checking if the user in the databse
         user_database.register_user(username_input, password_input)
     curr_user = User(username_input, password_input, user_database.getID(username_input)) # creating a User object with its credentials
@@ -89,7 +90,7 @@ def accountDB_menu():
             acc_url = input("enter the account's url: ")
             acc_name = input("enter the account's name: ")
             acc_username = input("enter the account's username: ")
-            acc_password = input("enter the account's password: ")
+            acc_password = getpass(prompt="enter the account's password: ", stream = None)
             user_database.inset_account(curr_user, acc_url, acc_name, acc_username, acc_password)
         elif action == "2": # removing an account to the databse
             acc_name = input("enter the account's name you desire to delete: ")
