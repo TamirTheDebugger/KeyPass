@@ -15,7 +15,8 @@ def user_login():
     :rtype: boolean
     """
     global curr_user, user_database
-    username_input = input("enter your username: ")
+    curr_user = ""
+    username_input = input("\nenter your username: ")
     password_input = getpass(prompt="enter your password: ", stream = None)
     if(not user_database.user_in_DB(username_input)): # checking if the user in the databse
         user_database.register_user(username_input, password_input)
@@ -74,7 +75,8 @@ def copy_menu(cred_list):
 def accountDB_menu():
     """
     the menu to control the database
-    :return: None
+    :return: True or False - logging out or exiting completely
+    :rtype: boolean
     """
     global curr_user, user_database
     print("hello " + curr_user.getUsername() + " please choose an action to perform:")
@@ -82,10 +84,11 @@ def accountDB_menu():
              1: Enter a new Account to the database
              2: Remove an Account from the database
              3: Get an Account url, username and password
-             4: exit the program"""
+             4: log out
+             5: exit the program"""
     print(welcome)
     action = input("what would you like to do? enter the corresponding number: ")
-    while action != "4":
+    while action != "5":
         if action == "1": # inserting an account to the database
             acc_url = input("enter the account's url: ")
             acc_name = input("enter the account's name: ")
@@ -99,18 +102,24 @@ def accountDB_menu():
         elif action == "3": # retrieving an account from the database
             acc_name = input("enter the account's name: ")
             copy_menu(user_database.get_account(curr_user, acc_name))
+        elif action == "4":
+            print("\nyou are logged out :)")
+            return True
         else:
             print("invalid input, please try again")
         print(welcome)
         action = input("what else would you like to do? enter the corresponding number: ")
     print("\n thank you and goodbye :)")
+    return False
 
 def main():
-    if(user_login()):
-        print("logged in successfully")
-        accountDB_menu()
-    else:
-        print("login failed")
+    keepgoin = True # whether the program will continue with a new user
+    while keepgoin:
+        if(user_login()):
+            print("logged in successfully")
+            keepgoin = accountDB_menu() # the program will continue with a new user if returned True
+        else:
+            print("login failed")
 
 
 if __name__ == '__main__':
