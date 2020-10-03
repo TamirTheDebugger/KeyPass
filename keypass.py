@@ -5,6 +5,8 @@ from ctypes import windll
 import time
 import threading
 from getpass import getpass
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 
 curr_user = "placeholder"
 user_database = userDB("test_DB")
@@ -36,6 +38,25 @@ def copy_creds(str):
         windll.user32.EmptyClipboard()
         windll.user32.CloseClipboard()
 
+def auto_login(acc_creds):
+    """
+    automaticly opens the url and fills the account's credentials
+    :param acc_creds: the account's url and credentials
+    :type acc_creds: List
+    :return: None
+    """
+    print("opening website")
+    driver = webdriver.Chrome(r"D:\chromedriver.exe")
+    driver.get(acc_creds[0])
+    time.sleep(0.5)
+    password = driver.find_element_by_css_selector("input[type='password']") # locating password input box
+    try: # locating username/email input box
+        user = driver.find_element_by_css_selector("input[type='email']")
+    except Exception:
+        user = driver.find_element_by_css_selector("input[type='text']")
+    password.send_keys(acc_creds[2])
+    user.send_keys(acc_creds[1])
+
 def copy_menu(cred_list):
     """
     the menu to copy the account credentials
@@ -43,34 +64,36 @@ def copy_menu(cred_list):
     :type cred_list: list
     :return: None
     """
-    print("here are the accounts we found:")
+    print("\nhere are the accounts we found:")
     if len(cred_list) == 0: # checking if any accounts were found
         print("no accounts were found\n")
         return None
     for i in range(len(cred_list)):
         acc = cred_list[i]
         print("\t" + str(i) + ". url: " + acc[0]) # displaying the retrieved accounts to the user
-    chosen_account = int(input("insert the number of the account to copy: "))
+    chosen_account = int(input("insert the number of the desired account: "))
     if chosen_account > len(cred_list): # checking if the chosen account exists in the list
         print("invalid number, please try again")
         return None
-    print("""what would you like to copy?
-            1. the url
-            2. the username
-            3. the password
-            4. nothing""")
-    copy_info = input("enter the number of what you want to copy: ") # the user enters what information to copy
-    while copy_info != "4":
-        cred_to_copy = ""
+    print("""what would you like to do?
+            1. copy the url
+            2. copy the username
+            3. copy the password
+            4. auto login
+            5. nothing""")
+    copy_info = input("enter the number of what you want to do: ") # the user enters what information to copy
+    while copy_info != "5":
         if copy_info == "1":
-            cred_to_copy = cred_list[chosen_account][0] # copying the url and clearing the clipboard afterwards
+            t = threading.Thread(target=copy_creds, args=(cred_list[chosen_account][0],)) # copying the url and clearing the clipboard afterwards
         elif copy_info == "2":
-            cred_to_copy = cred_list[chosen_account][1] # copying the username and clearing the clipboard afterwards
+            t = threading.Thread(target=copy_creds, args=(cred_list[chosen_account][1],)) # copying the username and clearing the clipboard afterwards
         elif copy_info == "3":
-            cred_to_copy = cred_list[chosen_account][2] # copying the password and clearing the clipboard afterwards
-        t = threading.Thread(target=copy_creds, args=(cred_to_copy,))
+            t = threading.Thread(target=copy_creds, args=(cred_list[chosen_account][2],)) # copying the password and clearing the clipboard afterwards
+        elif copy_info == "4":
+            t = threading.Thread(target=auto_login, args=(cred_list[chosen_account],)) # automaticly login in to the website
         t.start()
-        copy_info = input("enter the number of what else you want to copy: ")
+        time.sleep(1)
+        copy_info = input("\nenter the number of what else you want to do: ")
 
 def accountDB_menu():
     """
